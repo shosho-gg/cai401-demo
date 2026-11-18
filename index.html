@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CAI401 – Tool-Wear Anomaly Detection</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap">
+<style>
+  :root { --dark:#2C3D2C; --wine:#4C7045; --rose:#9DB892; --tint:#DCE8D5; --paper:#EEF3EA; --card:#FFFFFF; --text:#1E261E; --muted:#56635A;
+          --normal:#8DB97A; --worn:#1E261E; --ok:#3D6E37; --amber:#C98A12; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--text); font:15px/1.5 Inter, Arial, sans-serif; }
+  header { position:relative; background:linear-gradient(120deg,#263626 0%,#2F4A2E 60%,#3D5E38 100%); color:#DCE8D6; padding:20px 28px 0; }
+  .eyebrow { font-size:12px; letter-spacing:2px; font-weight:600; color:#A8CC96; text-transform:uppercase; }
+  header h1 { font:900 28px/1.15 Inter, Arial, sans-serif; text-transform:uppercase; letter-spacing:.3px; color:#FFFFFF; margin:6px 0 4px; }
+  .facts { list-style:none; margin:4px 0 14px; padding:0; max-width:900px; }
+  .facts li { position:relative; padding-left:26px; margin:3px 0; }
+  .facts li::before { content:"✨"; position:absolute; left:0; top:0; font-size:14px; }
+  .facts b { color:#FFFFFF; }
+  header .arrow { position:absolute; right:30px; top:6px; font:900 92px/1 Inter, Arial, sans-serif; color:#FFFFFF; }
+  @media (max-width:860px) { header .arrow { display:none; } }
+  header p { margin:0 0 14px; max-width:900px; }
+  nav { display:flex; gap:4px; flex-wrap:wrap; }
+  nav a { color:#DCE8D6; text-decoration:none; padding:10px 16px; font-weight:600; border-radius:0; text-transform:uppercase; font-size:13px; letter-spacing:1px; }
+  nav a.on { background:var(--paper); color:var(--dark); }
+  .engine { font-size:13px; color:#A8CC96; margin:-6px 0 10px; }
+  main { max-width:1240px; margin:0 auto; padding:20px 22px 48px; }
+  .view { display:none; } .view.on { display:block; }
+  .panel { background:var(--card); border-top:4px solid var(--wine); padding:18px 20px; margin-bottom:18px; }
+  h2 { font:900 19px/1.3 Inter, Arial, sans-serif; text-transform:uppercase; letter-spacing:.3px; color:var(--dark); margin:0 0 10px; }
+  h3 { font:600 15px/1.3 Inter, Arial, sans-serif; color:var(--dark); margin:0 0 6px; }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; }
+  .chip { border:1px solid #B5C9AB; background:#fff; color:var(--dark); padding:6px 11px; font:inherit; font-size:13px; cursor:pointer; border-radius:0; }
+  .chip small { color:var(--muted); margin-left:3px; }
+  .chip[aria-pressed="true"] { background:var(--wine); color:#fff; border-color:var(--wine); }
+  .chip[aria-pressed="true"] small { color:#D7DDD5; }
+  .bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+  button.primary { background:var(--wine); color:#fff; border:0; padding:9px 16px; font:inherit; font-weight:600; cursor:pointer; }
+  button.ghost { background:#fff; color:var(--wine); border:1px solid var(--wine); padding:8px 13px; font:inherit; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  select { font:inherit; padding:7px; border:1px solid #B5C9AB; background:#fff; }
+  .grid2 { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:18px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; }
+  .traces { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .trace { background:var(--paper); padding:8px 10px 4px; }
+  .trace h3 { font-size:13px; margin:0; }
+  canvas { width:100%; display:block; }
+  input[type=range] { accent-color:var(--wine); }
+  .lamp { display:flex; align-items:center; gap:16px; padding:16px; background:var(--paper); }
+  .light { width:74px; height:74px; border-radius:50%; flex:none; background:#B5C9AB; box-shadow:0 0 0 6px #fff inset; transition:background .2s; }
+  .light.green { background:#4FA35A; } .light.amber { background:#D9A21B; } .light.red { background:#B3261E; }
+  .status { font:700 22px/1.2 Inter, Arial, sans-serif; color:var(--dark); }
+  .status small { display:block; font:400 13px Inter, Arial, sans-serif; color:var(--muted); margin-top:4px; }
+  .kpis { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+  .kpi { background:var(--paper); padding:10px 12px; }
+  .kpi .k { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+  .kpi .v { font:700 21px/1.2 Inter, Arial, sans-serif; color:var(--dark); }
+  .v.worn, td.worn { color:#212121; } .v.normal { color:var(--ok); }
+  .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-top:4px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+  .legend i.dash { width:16px; height:0; border-top:2px dashed var(--dark); border-radius:0; vertical-align:3px; }
+  .maps { display:grid; grid-template-columns:70px repeat(3, minmax(0,1fr)); gap:8px; align-items:center; }
+  .maps .lab { font-size:12px; color:var(--muted); }
+  .maps .colh { font-weight:600; color:var(--dark); font-size:13px; text-align:center; }
+  .maps canvas { image-rendering:pixelated; aspect-ratio:1/1; background:#DCE5D7; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid #D5E0CF; }
+  th { background:var(--tint); color:var(--dark); font-weight:600; }
+  td.ok { color:var(--ok); font-weight:600; } td.no { color:#B3261E; font-weight:600; }
+  tr.click { cursor:pointer; } tr.click:hover td { background:#EEF5E9; }
+  .note { font-size:13px; color:var(--muted); }
+  .progress { height:8px; background:#D5E0CF; margin-top:10px; } .progress div { height:100%; width:0; background:var(--wine); transition:width .15s; }
+  .callout { background:var(--wine); color:#EAF3E5; padding:14px 16px; }
+  .callout b { color:#fff; }
+  .pairs .chip { font-size:14px; }
+  .meter { display:grid; grid-template-columns:200px 1fr 64px; gap:8px; align-items:center; font-size:13px; margin:6px 0; }
+  .meter .track { background:var(--paper); height:18px; position:relative; }
+  .meter .fill { position:absolute; left:0; top:0; height:100%; }
+  .sumcards { margin-top:14px; }
+  .sum { padding:16px 18px; background:var(--paper); border-left:6px solid var(--wine); }
+  .sum.dim { border-left-color:#B5C9AB; }
+  .sum.red { border-left-color:#B3261E; }
+  .lampkey { display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; font-size:13px; font-weight:600; color:var(--dark); }
+  .lampkey i { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:-1px; }
+  .lampkey .g { background:#4FA35A; } .lampkey .a { background:#D9A21B; } .lampkey .r { background:#B3261E; }
+  .sum .big { font:900 34px/1.1 Inter, Arial, sans-serif; color:var(--dark); }
+  .sum .big small { font-size:18px; color:var(--muted); font-weight:700; }
+  .sum .t { font-weight:700; color:var(--dark); margin-top:2px; }
+  .sum .d { font-size:13px; color:var(--muted); margin-top:4px; }
+  .grp { margin-bottom:18px; }
+  .grp-h { display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid var(--dark); padding-bottom:6px; margin-bottom:6px; }
+  .grp-h h3 { margin:0; font-weight:900; text-transform:uppercase; letter-spacing:.3px; }
+  .grp-h span { font-size:13px; color:var(--muted); }
+  .row { display:grid; grid-template-columns:230px 1fr 64px 190px; gap:12px; align-items:center; padding:7px 4px; border-bottom:1px solid #D5E0CF; cursor:pointer; font-size:14px; }
+  .row:hover { background:#EEF5E9; }
+  .row .ex b { color:var(--dark); } .row .ex small { display:block; color:var(--muted); font-size:12px; }
+  .row .track { position:relative; height:16px; background:var(--paper); }
+  .row .fill { position:absolute; left:0; top:0; height:100%; background:#B3261E; }
+  .row .fill.low { background:#B9C6B3; }
+  .row .mark { position:absolute; top:-3px; bottom:-3px; left:10%; border-left:2px dashed var(--dark); }
+  .row .pct { text-align:right; font-variant-numeric:tabular-nums; color:var(--dark); }
+  .pill { white-space:nowrap; justify-self:start; padding:4px 10px; font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
+  .pill.hit { background:#B3261E; color:#fff; }
+  .pill.quiet { border:2px solid var(--ok); color:var(--ok); padding:2px 8px; }
+  .pill.miss { background:#E3E8E0; color:#56635A; }
+  .pill.fa { background:#B3261E; color:#fff; }
+  @media (max-width:860px) { .row { grid-template-columns:110px 1fr 56px; } .row .pill { grid-column:1/-1; } }
+  @media (max-width:860px) { .grid2, .grid3, .traces { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="arrow" aria-hidden="true">↗</div>
+  <div class="eyebrow">CAI401 Selected Topics 2 · Group 2</div>
+  <h1>Tool-wear anomaly detection</h1>
+  <ul class="facts">
+    <li><b>Our real trained model:</b> the Attention-Based ConvLSTM Autoencoder, exported to ONNX</li>
+    <li><b>Tested on unseen data:</b> 12 experiments the model never saw during training</li>
+    <li><b>Trained on normal machining only:</b> experiments 1, 2, 3, 5, 11 and 17; it has never seen a worn tool</li>
+  </ul>
+  <div class="engine" id="engine">Loading model…</div>
+  <nav>
+    <a href="#monitor" data-v="monitor">Control room</a>
+    <a href="#inside" data-v="inside">Inside the model</a>
+    <a href="#compare" data-v="compare">Normal vs worn</a>
+    <a href="#results" data-v="results">All results</a>
+  </nav>
+</header>
+<main>
+  <!-- CONTROL ROOM -->
+  <section class="view" id="v-monitor">
+    <div class="panel">
+      <h2>Choose an experiment and start the machine</h2>
+      <div class="chips" id="chips-monitor"></div>
+      <div class="bar">
+        <button class="primary" id="play" disabled>▶ Start</button>
+        <button class="ghost" id="reset" disabled>Reset</button>
+        <label class="note">Speed <select id="speed"><option value="1">1× (real time)</option><option value="4" selected>4×</option><option value="12">12×</option><option value="40">40×</option></select></label>
+        <span class="note" id="hint"></span>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h2>Live sensor signals</h2>
+        <div class="traces">
+          <div class="trace"><h3>X-axis motor power</h3><canvas id="tr0" height="120"></canvas></div>
+          <div class="trace"><h3>Y-axis motor power</h3><canvas id="tr1" height="120"></canvas></div>
+          <div class="trace"><h3>Spindle power</h3><canvas id="tr2" height="120"></canvas></div>
+          <div class="trace"><h3>Spindle current</h3><canvas id="tr3" height="120"></canvas></div>
+        </div>
+        <h2 style="margin-top:16px">Anomaly score</h2>
+        <canvas id="scorechart" height="210"></canvas>
+        <div class="legend"><span><i style="background:#B9C6B3"></i>below threshold</span><span><i style="background:#B3261E"></i>flagged</span><span><i class="dash"></i>threshold</span></div>
+      </div>
+      <div class="panel">
+        <h2>Machine status</h2>
+        <div class="lamp"><div class="light" id="light"></div><div class="status" id="status">Idle<small>Press Start</small></div></div>
+        <div class="kpis">
+          <div class="kpi"><div class="k">Experiment</div><div class="v" id="k-exp">–</div></div>
+          <div class="kpi"><div class="k">Cutting time</div><div class="v" id="k-time">–</div></div>
+          <div class="kpi"><div class="k">Sequences analysed</div><div class="v" id="k-n">0</div></div>
+          <div class="kpi"><div class="k">Flagged so far</div><div class="v" id="k-frac">–</div></div>
+          <div class="kpi"><div class="k">Current score</div><div class="v" id="k-score">–</div></div>
+          <div class="kpi"><div class="k">Model inference</div><div class="v" id="k-ms">–</div></div>
+        </div>
+        <div class="lampkey"><span><i class="g"></i>Normal</span><span><i class="a"></i>Suspicious moment</span><span><i class="r"></i>Worn tool</span></div>
+        <div class="callout" id="truth" style="margin-top:10px">True condition is revealed at the end.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSIDE THE MODEL -->
+  <section class="view" id="v-inside">
+    <div class="panel">
+      <h2>What the network sees and predicts</h2>
+      <p class="note" style="margin-top:0">The model predicts the next image. Dark cells in the error map = abnormal behaviour.</p>
+      <div class="chips" id="chips-inside"></div>
+      <div class="bar">
+        <label class="note">Moment in the experiment <input type="range" id="seqslider" min="0" max="0" value="0" style="width:320px; vertical-align:middle"></label>
+        <span class="note" id="seqinfo"></span>
+        <button class="primary" id="analyze" disabled>Run the network on this moment</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="maps" id="maps">
+          <div></div><div class="colh">Actual 5th image</div><div class="colh">Predicted by the model</div><div class="colh">Squared error</div>
+          <div class="lab">1 s window</div><canvas id="m00" width="39" height="39"></canvas><canvas id="m01" width="39" height="39"></canvas><canvas id="m02" width="39" height="39"></canvas>
+          <div class="lab">3 s window</div><canvas id="m10" width="39" height="39"></canvas><canvas id="m11" width="39" height="39"></canvas><canvas id="m12" width="39" height="39"></canvas>
+          <div class="lab">6 s window</div><canvas id="m20" width="39" height="39"></canvas><canvas id="m21" width="39" height="39"></canvas><canvas id="m22" width="39" height="39"></canvas>
+        </div>
+        <p class="note" id="mapnote" hidden></p>
+      </div>
+      <div class="panel">
+        <h2>Which sensors caused the alarm?</h2>
+        
+        <div id="sensorbars"></div>
+        <div class="kpis">
+          <div class="kpi"><div class="k">Pairs above threshold</div><div class="v" id="i-a">–</div></div>
+          <div class="kpi"><div class="k">Final score</div><div class="v" id="i-s">–</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NORMAL VS WORN -->
+  <section class="view" id="v-compare">
+    <div class="panel">
+      <h2>Same feedrate, normal tool vs worn tool</h2>
+      
+      <div class="chips pairs" id="chips-pairs"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h2 id="cmp-title">Feed-axis motor power during cutting</h2>
+        <canvas id="cmpchart" height="300"></canvas>
+        <div class="legend"><span><i style="background:var(--normal)"></i><span id="lg-n">normal</span></span><span><i style="background:var(--worn)"></i><span id="lg-w">worn</span></span></div>
+      </div>
+      <div class="panel">
+        <h2>Average level during cutting</h2>
+        <div id="meters"></div>
+        <div class="callout" id="cmp-text" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="view" id="v-results">
+    <div class="panel">
+      <h2>Where the system works, and where it does not</h2>
+      
+      <div class="grid3 sumcards" id="sumcards"></div>
+    </div>
+    <div class="panel">
+      <div id="groups"></div>
+      <div class="bar" style="margin-top:16px"><button class="ghost" id="runall" disabled>▶ Re-run all 12 experiments in this browser (about 4 min)</button><span class="note" id="runinfo"></span></div>
+      <div class="progress"><div id="prog"></div></div>
+      <p class="note" id="resfoot"></p>
+    </div>
+  </section>
+</main>
+<script src="ort.wasm.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
